@@ -15,6 +15,14 @@
     "prepare": "husky install",
     "start": "node server.js"
   },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:ivannguyendev/FlowiseChatEmbed.git"
+  },
   "license": "MIT",
   "dependencies": {
     "@babel/core": "^7.22.1",
