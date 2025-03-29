@@ -362,10 +362,7 @@ export const Bot = (botProps: BotProps & { class?: string }) => {
 
     try {
       if (props.storageAdapter) {
-        await props.storageAdapter.saveMessages(
-          props.chatflowid,
-          { chatId: chatId(), chatHistory: messages }
-        );
+        await props.storageAdapter.saveMessages(props.chatflowid, { chatId: chatId(), chatHistory: messages });
       } else {
         setLocalStorageChatflow(props.chatflowid, chatId(), { chatHistory: messages });
       }
@@ -599,25 +596,25 @@ export const Bot = (botProps: BotProps & { class?: string }) => {
         switch (payload.event) {
           case 'start':
             setMessages((prevMessages) => [...prevMessages, { message: '', type: 'apiMessage' }]);
-            break
+            break;
           case 'token':
             updateLastMessage(payload.data);
-            break
+            break;
           case 'sourceDocuments':
             updateLastMessageSourceDocuments(payload.data);
-            break
+            break;
           case 'usedTools':
             updateLastMessageUsedTools(payload.data);
-            break
+            break;
           case 'fileAnnotations':
             updateLastMessageFileAnnotations(payload.data);
-            break
+            break;
           case 'agentReasoning':
             updateLastMessageAgentReasoning(payload.data);
-            break
+            break;
           case 'action':
             updateLastMessageAction(payload.data);
-            break
+            break;
           case 'artifacts':
             updateLastMessageArtifacts(payload.data);
             break;
@@ -633,10 +630,7 @@ export const Bot = (botProps: BotProps & { class?: string }) => {
             break;
           case 'end':
             if (props.storageAdapter) {
-              await props.storageAdapter.saveMessages(
-                props.chatflowid,
-                { chatId: chatId() }
-              );
+              await props.storageAdapter.saveMessages(props.chatflowid, { chatId: chatId() });
             } else {
               setLocalStorageChatflow(props.chatflowid, chatId());
             }
@@ -928,7 +922,7 @@ export const Bot = (botProps: BotProps & { class?: string }) => {
           type: 'apiMessage',
         },
       ];
-      const lead = await getLeadDataFromStorage(props)
+      const lead = await getLeadDataFromStorage(props);
       if (leadsConfig()?.status && !lead) {
         messages.push({ message: '', type: 'leadCaptureMessage' });
       }
@@ -1010,22 +1004,22 @@ export const Bot = (botProps: BotProps & { class?: string }) => {
       const loadedMessages: MessageType[] =
         chatHistory?.chatHistory?.length > 0
           ? chatHistory.chatHistory?.map((message: MessageType) => {
-            const chatHistory: MessageType = {
-              messageId: message?.messageId,
-              message: message.message,
-              type: message.type,
-              rating: message.rating,
-              dateTime: message.dateTime,
-            };
-            if (message.sourceDocuments) chatHistory.sourceDocuments = message.sourceDocuments;
-            if (message.fileAnnotations) chatHistory.fileAnnotations = message.fileAnnotations;
-            if (message.fileUploads) chatHistory.fileUploads = message.fileUploads;
-            if (message.agentReasoning) chatHistory.agentReasoning = message.agentReasoning;
-            if (message.action) chatHistory.action = message.action;
-            if (message.artifacts) chatHistory.artifacts = message.artifacts;
-            if (message.followUpPrompts) chatHistory.followUpPrompts = message.followUpPrompts;
-            return chatHistory;
-          })
+              const chatHistory: MessageType = {
+                messageId: message?.messageId,
+                message: message.message,
+                type: message.type,
+                rating: message.rating,
+                dateTime: message.dateTime,
+              };
+              if (message.sourceDocuments) chatHistory.sourceDocuments = message.sourceDocuments;
+              if (message.fileAnnotations) chatHistory.fileAnnotations = message.fileAnnotations;
+              if (message.fileUploads) chatHistory.fileUploads = message.fileUploads;
+              if (message.agentReasoning) chatHistory.agentReasoning = message.agentReasoning;
+              if (message.action) chatHistory.action = message.action;
+              if (message.artifacts) chatHistory.artifacts = message.artifacts;
+              if (message.followUpPrompts) chatHistory.followUpPrompts = message.followUpPrompts;
+              return chatHistory;
+            })
           : [{ message: props.welcomeMessage ?? defaultWelcomeMessage, type: 'apiMessage' }];
 
       const filteredMessages = loadedMessages.filter((message) => message.type !== 'leadCaptureMessage');
@@ -1068,8 +1062,8 @@ export const Bot = (botProps: BotProps & { class?: string }) => {
       }
       if (chatbotConfig.leads) {
         setLeadsConfig(chatbotConfig.leads);
-        const lead = await getLeadDataFromStorage(props)
-        setStoredLead(lead)
+        const lead = await getLeadDataFromStorage(props);
+        setStoredLead(lead);
         if (chatbotConfig.leads?.status && !lead) {
           setMessages((prevMessages) => [...prevMessages, { message: '', type: 'leadCaptureMessage' }]);
         }
@@ -1082,19 +1076,19 @@ export const Bot = (botProps: BotProps & { class?: string }) => {
       }
     }
 
-      // eslint-disable-next-line solid/reactivity
-      return () => {
-        setUserInput('');
-        setUploadedFiles([]);
-        setLoading(false);
-        setMessages([
-          {
-            message: props.welcomeMessage ?? defaultWelcomeMessage,
-            type: 'apiMessage',
-          },
-        ]);
-      };
-    });
+    // eslint-disable-next-line solid/reactivity
+    return () => {
+      setUserInput('');
+      setUploadedFiles([]);
+      setLoading(false);
+      setMessages([
+        {
+          message: props.welcomeMessage ?? defaultWelcomeMessage,
+          type: 'apiMessage',
+        },
+      ]);
+    };
+  });
 
   createEffect(() => {
     if (followUpPromptsStatus() && messages().length > 0) {

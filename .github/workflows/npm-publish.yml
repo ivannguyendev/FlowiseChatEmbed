@@ -17,7 +17,7 @@ jobs:
           node-version: 20
           registry-url: https://registry.npmjs.org/
           scope: '@ivannguyendev'      
-      - run: yarn && yarn prod:build
+      - run: yarn && yarn build
       - name: Pushlish to GITHUB
         uses: JS-DevTools/npm-publish@v2
         with:
@@ -39,7 +39,7 @@ jobs:
           node-version: 20
           registry-url: https://registry.npmjs.org/
           scope: '@ivannguyendev'
-      - run: yarn && yarn prod:build
+      - run: yarn && yarn build
       - name: Pushlish to NPM
         uses: JS-DevTools/npm-publish@v2
         with:

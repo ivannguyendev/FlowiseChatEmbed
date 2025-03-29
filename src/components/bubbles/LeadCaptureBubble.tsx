@@ -53,7 +53,8 @@ export const LeadCaptureBubble = (props: Props) => {
   const [leadFormError, setLeadFormError] = createSignal<Record<string, string[]>>();
   const [storedLead, setStoredLead] = createSignal<any>(undefined);
 
-  onMount(async () => { // Replaced useEffect with onMount
+  onMount(async () => {
+    // Replaced useEffect with onMount
     const leadData = await getLeadDataFromStorage(props);
     setStoredLead(leadData);
   });
@@ -87,7 +88,7 @@ export const LeadCaptureBubble = (props: Props) => {
                 name: leadName(),
                 email: leadEmail(),
                 phone: leadPhone(),
-              }
+              },
             });
           } else {
             setLocalStorageChatflow(props.chatflowid, props.chatId, {
@@ -95,7 +96,7 @@ export const LeadCaptureBubble = (props: Props) => {
                 name: leadName(),
                 email: leadEmail(),
                 phone: leadPhone(),
-              }
+              },
             });
           }
           props.setIsLeadSaved(true);
@@ -193,5 +194,4 @@ export const LeadCaptureBubble = (props: Props) => {
       </div>
     </div>
   );
-
 };
