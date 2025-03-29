@@ -8,4 +8,5 @@ export const defaultBotProps: BubbleProps = {
   theme: undefined,
   observersConfig: undefined,
   storageAdapter: undefined,
+  chatId: undefined,
 };
