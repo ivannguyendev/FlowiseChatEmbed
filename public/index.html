@@ -26,12 +26,27 @@
         // support=abc123-def456,https://example.com
         // salesbot=ghi123-jkl456,https://example.com
         //
+        const chatflowid = "";
+        const apiHost = "http://localhost";
         // Then use the environment variable name as chatflowid:
-        Chatbot.init({
-            chatflowid: 'agent1',    // or 'support', 'salesbot', etc.
-            apiHost: window.location.origin
+        Chatbot.initFull({
+            chatflowid: chatflowid,    // or 'support', 'salesbot', etc.
+            apiHost: apiHost,
+            storageAdapter : {
+                async getMessages(chatflowid, chatId) {
+                    console.log('getMessages', chatflowid)
+                    return { chatHistory: [], chatId, lead: null }
+                },
+                async removeMessages(chatflowid, chatId) {
+                    console.log(chatflowid, chatId)
+                },
+                async saveMessages(chatflowid, saveObj) {
+                    console.log(chatflowid, saveObj)
+                },
+            }
         })
     </script>
+    <flowise-fullchatbot></flowise-fullchatbot>
 </body>
 
 </html>
