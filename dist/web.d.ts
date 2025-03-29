@@ -3,9 +3,11 @@ declare const chatbot: {
         chatflowid: string;
         apiHost?: string | undefined;
         onRequest?: ((request: RequestInit) => Promise<void>) | undefined;
+        chatid?: string | undefined;
+        storageAdapter?: import("./utils/storage/storageAdapter").StorageAdapter | undefined;
         chatflowConfig?: Record<string, unknown> | undefined;
-        observersConfig?: import("../src/components/Bot").observersConfigType | undefined;
-        theme?: import("../src/features/bubble/types").BubbleTheme | undefined;
+        observersConfig?: import("./components/Bot").observersConfigType | undefined;
+        theme?: import("./features/bubble/types").BubbleTheme | undefined;
     } & {
         id?: string | undefined;
     }) => void;
@@ -13,9 +15,11 @@ declare const chatbot: {
         chatflowid: string;
         apiHost?: string | undefined;
         onRequest?: ((request: RequestInit) => Promise<void>) | undefined;
+        chatid?: string | undefined;
+        storageAdapter?: import("./utils/storage/storageAdapter").StorageAdapter | undefined;
         chatflowConfig?: Record<string, unknown> | undefined;
-        observersConfig?: import("../src/components/Bot").observersConfigType | undefined;
-        theme?: import("../src/features/bubble/types").BubbleTheme | undefined;
+        observersConfig?: import("./components/Bot").observersConfigType | undefined;
+        theme?: import("./features/bubble/types").BubbleTheme | undefined;
     }) => void;
     destroy: () => void;
 };

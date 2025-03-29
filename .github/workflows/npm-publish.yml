@@ -1,0 +1,49 @@
+name: Node.js Package
+on:
+  push:
+    branches:
+      - main
+jobs:
+  release-github:
+    runs-on: ubuntu-latest
+    if: "startsWith(github.event.head_commit.message, '[RELEASE]')"
+    permissions: 
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
+          scope: '@ivannguyendev'      
+      - run: yarn && yarn prod:build
+      - name: Pushlish to GITHUB
+        uses: JS-DevTools/npm-publish@v2
+        with:
+          token: ${{ secrets.GIT_TOKEN }}
+          registry: https://npm.pkg.github.com/
+          access: public
+          strategy: all
+
+  release-npm:
+    runs-on: ubuntu-latest
+    if: "startsWith(github.event.head_commit.message, '[RELEASE]')"
+    permissions: 
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
+          scope: '@ivannguyendev'
+      - run: yarn && yarn prod:build
+      - name: Pushlish to NPM
+        uses: JS-DevTools/npm-publish@v2
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          registry: https://registry.npmjs.org/
+          access: public
+          strategy: all

@@ -1,9 +1,11 @@
 import { LeadsConfig, MessageType } from '@/components/Bot';
+import { StorageAdapter } from '@/utils/storage/storageAdapter';
 type Props = {
     message: MessageType;
     chatflowid: string;
     chatId: string;
     leadsConfig?: LeadsConfig;
+    storageAdapter?: StorageAdapter;
     apiHost?: string;
     showAvatar?: boolean;
     avatarSrc?: string;

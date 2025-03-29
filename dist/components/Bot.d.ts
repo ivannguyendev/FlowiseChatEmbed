@@ -67,6 +67,7 @@ export type MessageType = {
     dateTime?: string;
 };
 type observerConfigType = (accessor: string | boolean | object | MessageType[]) => void;
+import { StorageAdapter } from '@/utils/storage/storageAdapter';
 export type observersConfigType = Record<'observeUserInput' | 'observeLoading' | 'observeMessages', observerConfigType>;
 export type BotProps = {
     chatflowid: string;
@@ -103,6 +104,8 @@ export type BotProps = {
     dateTimeToggle?: DateTimeToggleTheme;
     renderHTML?: boolean;
     closeBot?: () => void;
+    chatId?: string;
+    storageAdapter?: StorageAdapter;
 };
 export type LeadsConfig = {
     status: boolean;

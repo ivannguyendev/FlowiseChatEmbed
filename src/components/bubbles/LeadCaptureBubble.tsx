@@ -1,16 +1,18 @@
-import { createSignal, Show } from 'solid-js';
+import { createSignal, Show, onMount } from 'solid-js';
 import { z } from 'zod';
 import { FormEvent, LeadsConfig, MessageType } from '@/components/Bot';
 import { addLeadQuery, LeadCaptureInput } from '@/queries/sendMessageQuery';
 import { SaveLeadButton } from '@/components/buttons/LeadCaptureButtons';
 import { Avatar } from '@/components/avatars/Avatar';
 import { getLocalStorageChatflow, setLocalStorageChatflow } from '@/utils';
+import { StorageAdapter } from '@/utils/storage/storageAdapter';
 
 type Props = {
   message: MessageType;
   chatflowid: string;
   chatId: string;
   leadsConfig?: LeadsConfig;
+  storageAdapter?: StorageAdapter;
   apiHost?: string;
   showAvatar?: boolean;
   avatarSrc?: string;
@@ -34,12 +36,27 @@ const LeadCaptureSchema = z.object({
   phone: z.string().min(5, 'Phone number is too short').regex(phoneRegex, 'Invalid Number!').optional(),
 });
 
+const getLeadDataFromStorage = async (props: Props) => {
+  if (props.storageAdapter) {
+    const storedChatflow = await props.storageAdapter.getMessages(props.chatflowid, props.chatId);
+    return storedChatflow?.lead;
+  } else {
+    return getLocalStorageChatflow(props.chatflowid)?.lead;
+  }
+};
+
 export const LeadCaptureBubble = (props: Props) => {
   const [leadName, setLeadName] = createSignal<string>('');
   const [leadEmail, setLeadEmail] = createSignal<string>('');
   const [leadPhone, setLeadPhone] = createSignal<string>('');
   const [isLeadSaving, setIsLeadSaving] = createSignal(false);
   const [leadFormError, setLeadFormError] = createSignal<Record<string, string[]>>();
+  const [storedLead, setStoredLead] = createSignal<any>(undefined);
+
+  onMount(async () => { // Replaced useEffect with onMount
+    const leadData = await getLeadDataFromStorage(props);
+    setStoredLead(leadData);
+  });
 
   const handleLeadCaptureSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -63,15 +80,29 @@ export const LeadCaptureBubble = (props: Props) => {
       });
 
       if (result.data) {
-        setLocalStorageChatflow(props.chatflowid, props.chatId, {
-          lead: {
-            name: leadName(),
-            email: leadEmail(),
-            phone: leadPhone(),
-          },
-        });
-        props.setIsLeadSaved(true);
-        props.setLeadEmail(leadEmail());
+        try {
+          if (props.storageAdapter) {
+            await props.storageAdapter.saveMessages(props.chatflowid, {
+              lead: {
+                name: leadName(),
+                email: leadEmail(),
+                phone: leadPhone(),
+              }
+            });
+          } else {
+            setLocalStorageChatflow(props.chatflowid, props.chatId, {
+              lead: {
+                name: leadName(),
+                email: leadEmail(),
+                phone: leadPhone(),
+              }
+            });
+          }
+          props.setIsLeadSaved(true);
+          props.setLeadEmail(leadEmail());
+        } catch (error) {
+          console.error('Failed to save lead capture info', error);
+        }
       }
     } else {
       const error = res.error.flatten();
@@ -96,7 +127,7 @@ export const LeadCaptureBubble = (props: Props) => {
           'font-size': props.fontSize ? `${props.fontSize}px` : `${defaultFontSize}px`,
         }}
       >
-        {props.isLeadSaved || getLocalStorageChatflow(props.chatflowid)?.lead ? (
+        {props.isLeadSaved || storedLead() ? (
           <div class="flex flex-col gap-2">
             <span style={{ 'white-space': 'pre-line' }}>
               {props.leadsConfig?.successMessage || 'Thank you for submitting your contact information.'}
@@ -162,4 +193,5 @@ export const LeadCaptureBubble = (props: Props) => {
       </div>
     </div>
   );
+
 };

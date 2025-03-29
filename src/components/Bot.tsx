@@ -121,6 +121,8 @@ type IUploads = {
 }[];
 
 type observerConfigType = (accessor: string | boolean | object | MessageType[]) => void;
+import { StorageAdapter } from '@/utils/storage/storageAdapter';
+
 export type observersConfigType = Record<'observeUserInput' | 'observeLoading' | 'observeMessages', observerConfigType>;
 
 export type BotProps = {
@@ -156,6 +158,8 @@ export type BotProps = {
   dateTimeToggle?: DateTimeToggleTheme;
   renderHTML?: boolean;
   closeBot?: () => void;
+  chatId?: string;
+  storageAdapter?: StorageAdapter;
 };
 
 export type LeadsConfig = {
@@ -282,6 +286,7 @@ export const Bot = (botProps: BotProps & { class?: string }) => {
   const [isLeadSaved, setIsLeadSaved] = createSignal(false);
   const [leadEmail, setLeadEmail] = createSignal('');
   const [disclaimerPopupOpen, setDisclaimerPopupOpen] = createSignal(false);
+  const [storedLead, setStoredLead] = createSignal<any>(undefined);
 
   // drag & drop file input
   // TODO: fix this type
@@ -303,7 +308,8 @@ export const Bot = (botProps: BotProps & { class?: string }) => {
 
   createMemo(() => {
     const customerId = (props.chatflowConfig?.vars as any)?.customerId;
-    setChatId(customerId ? `${customerId.toString()}+${uuidv4()}` : uuidv4());
+    const generatedChatId = customerId ? `${customerId.toString()}+${uuidv4()}` : uuidv4();
+    setChatId(props.chatId ?? generatedChatId);
   });
 
   onMount(() => {
@@ -341,7 +347,7 @@ export const Bot = (botProps: BotProps & { class?: string }) => {
   /**
    * Add each chat message into localStorage
    */
-  const addChatMessage = (allMessage: MessageType[]) => {
+  const addChatMessage = async (allMessage: MessageType[]) => {
     const messages = allMessage.map((item) => {
       if (item.fileUploads) {
         const fileUploads = item?.fileUploads.map((file) => ({
@@ -353,7 +359,19 @@ export const Bot = (botProps: BotProps & { class?: string }) => {
       }
       return item;
     });
-    setLocalStorageChatflow(props.chatflowid, chatId(), { chatHistory: messages });
+
+    try {
+      if (props.storageAdapter) {
+        await props.storageAdapter.saveMessages(
+          props.chatflowid,
+          { chatId: chatId(), chatHistory: messages }
+        );
+      } else {
+        setLocalStorageChatflow(props.chatflowid, chatId(), { chatHistory: messages });
+      }
+    } catch (error) {
+      console.error('Failed to save chat history', error);
+    }
   };
 
   // Define the audioRef
@@ -581,25 +599,25 @@ export const Bot = (botProps: BotProps & { class?: string }) => {
         switch (payload.event) {
           case 'start':
             setMessages((prevMessages) => [...prevMessages, { message: '', type: 'apiMessage' }]);
-            break;
+            break
           case 'token':
             updateLastMessage(payload.data);
-            break;
+            break
           case 'sourceDocuments':
             updateLastMessageSourceDocuments(payload.data);
-            break;
+            break
           case 'usedTools':
             updateLastMessageUsedTools(payload.data);
-            break;
+            break
           case 'fileAnnotations':
             updateLastMessageFileAnnotations(payload.data);
-            break;
+            break
           case 'agentReasoning':
             updateLastMessageAgentReasoning(payload.data);
-            break;
+            break
           case 'action':
             updateLastMessageAction(payload.data);
-            break;
+            break
           case 'artifacts':
             updateLastMessageArtifacts(payload.data);
             break;
@@ -614,7 +632,14 @@ export const Bot = (botProps: BotProps & { class?: string }) => {
             closeResponse();
             break;
           case 'end':
-            setLocalStorageChatflow(chatflowid, chatId);
+            if (props.storageAdapter) {
+              await props.storageAdapter.saveMessages(
+                props.chatflowid,
+                { chatId: chatId() }
+              );
+            } else {
+              setLocalStorageChatflow(props.chatflowid, chatId());
+            }
             closeResponse();
             break;
         }
@@ -881,7 +906,16 @@ export const Bot = (botProps: BotProps & { class?: string }) => {
     handleSubmit(label, action);
   };
 
-  const clearChat = () => {
+  const getLeadDataFromStorage = async (props: BotProps) => {
+    if (props.storageAdapter) {
+      const storedChatflow = await props.storageAdapter.getMessages(props.chatflowid, chatId());
+      return storedChatflow?.lead;
+    } else {
+      return getLocalStorageChatflow(props.chatflowid)?.lead;
+    }
+  };
+
+  const clearChat = async () => {
     try {
       removeLocalStorageChatHistory(props.chatflowid);
       setChatId(
@@ -894,7 +928,8 @@ export const Bot = (botProps: BotProps & { class?: string }) => {
           type: 'apiMessage',
         },
       ];
-      if (leadsConfig()?.status && !getLocalStorageChatflow(props.chatflowid)?.lead) {
+      const lead = await getLeadDataFromStorage(props)
+      if (leadsConfig()?.status && !lead) {
         messages.push({ message: '', type: 'leadCaptureMessage' });
       }
       setMessages(messages);
@@ -958,33 +993,39 @@ export const Bot = (botProps: BotProps & { class?: string }) => {
       setDisclaimerPopupOpen(false);
     }
 
-    const chatMessage = getLocalStorageChatflow(props.chatflowid);
-    if (chatMessage && Object.keys(chatMessage).length) {
-      if (chatMessage.chatId) setChatId(chatMessage.chatId);
-      const savedLead = chatMessage.lead;
+    let chatHistory = null;
+    if (props.storageAdapter) {
+      chatHistory = await props.storageAdapter.getMessages(props.chatflowid, chatId());
+    } else {
+      chatHistory = getLocalStorageChatflow(props.chatflowid) || {};
+    }
+
+    if (chatHistory && Object.keys(chatHistory).length > 0) {
+      if (chatHistory.chatId) setChatId(chatHistory.chatId);
+      const savedLead = chatHistory.lead;
       if (savedLead) {
         setIsLeadSaved(!!savedLead);
         setLeadEmail(savedLead.email);
       }
       const loadedMessages: MessageType[] =
-        chatMessage?.chatHistory?.length > 0
-          ? chatMessage.chatHistory?.map((message: MessageType) => {
-              const chatHistory: MessageType = {
-                messageId: message?.messageId,
-                message: message.message,
-                type: message.type,
-                rating: message.rating,
-                dateTime: message.dateTime,
-              };
-              if (message.sourceDocuments) chatHistory.sourceDocuments = message.sourceDocuments;
-              if (message.fileAnnotations) chatHistory.fileAnnotations = message.fileAnnotations;
-              if (message.fileUploads) chatHistory.fileUploads = message.fileUploads;
-              if (message.agentReasoning) chatHistory.agentReasoning = message.agentReasoning;
-              if (message.action) chatHistory.action = message.action;
-              if (message.artifacts) chatHistory.artifacts = message.artifacts;
-              if (message.followUpPrompts) chatHistory.followUpPrompts = message.followUpPrompts;
-              return chatHistory;
-            })
+        chatHistory?.chatHistory?.length > 0
+          ? chatHistory.chatHistory?.map((message: MessageType) => {
+            const chatHistory: MessageType = {
+              messageId: message?.messageId,
+              message: message.message,
+              type: message.type,
+              rating: message.rating,
+              dateTime: message.dateTime,
+            };
+            if (message.sourceDocuments) chatHistory.sourceDocuments = message.sourceDocuments;
+            if (message.fileAnnotations) chatHistory.fileAnnotations = message.fileAnnotations;
+            if (message.fileUploads) chatHistory.fileUploads = message.fileUploads;
+            if (message.agentReasoning) chatHistory.agentReasoning = message.agentReasoning;
+            if (message.action) chatHistory.action = message.action;
+            if (message.artifacts) chatHistory.artifacts = message.artifacts;
+            if (message.followUpPrompts) chatHistory.followUpPrompts = message.followUpPrompts;
+            return chatHistory;
+          })
           : [{ message: props.welcomeMessage ?? defaultWelcomeMessage, type: 'apiMessage' }];
 
       const filteredMessages = loadedMessages.filter((message) => message.type !== 'leadCaptureMessage');
@@ -1027,7 +1068,9 @@ export const Bot = (botProps: BotProps & { class?: string }) => {
       }
       if (chatbotConfig.leads) {
         setLeadsConfig(chatbotConfig.leads);
-        if (chatbotConfig.leads?.status && !getLocalStorageChatflow(props.chatflowid)?.lead) {
+        const lead = await getLeadDataFromStorage(props)
+        setStoredLead(lead)
+        if (chatbotConfig.leads?.status && !lead) {
           setMessages((prevMessages) => [...prevMessages, { message: '', type: 'leadCaptureMessage' }]);
         }
       }
@@ -1039,19 +1082,19 @@ export const Bot = (botProps: BotProps & { class?: string }) => {
       }
     }
 
-    // eslint-disable-next-line solid/reactivity
-    return () => {
-      setUserInput('');
-      setUploadedFiles([]);
-      setLoading(false);
-      setMessages([
-        {
-          message: props.welcomeMessage ?? defaultWelcomeMessage,
-          type: 'apiMessage',
-        },
-      ]);
-    };
-  });
+      // eslint-disable-next-line solid/reactivity
+      return () => {
+        setUserInput('');
+        setUploadedFiles([]);
+        setLoading(false);
+        setMessages([
+          {
+            message: props.welcomeMessage ?? defaultWelcomeMessage,
+            type: 'apiMessage',
+          },
+        ]);
+      };
+    });
 
   createEffect(() => {
     if (followUpPromptsStatus() && messages().length > 0) {
@@ -1481,11 +1524,12 @@ export const Bot = (botProps: BotProps & { class?: string }) => {
                         renderHTML={props.renderHTML}
                       />
                     )}
-                    {message.type === 'leadCaptureMessage' && leadsConfig()?.status && !getLocalStorageChatflow(props.chatflowid)?.lead && (
+                    {message.type === 'leadCaptureMessage' && leadsConfig()?.status && !storedLead() && (
                       <LeadCaptureBubble
                         message={message}
                         chatflowid={props.chatflowid}
                         chatId={chatId()}
+                        storageAdapter={props.storageAdapter}
                         apiHost={props.apiHost}
                         backgroundColor={props.botMessage?.backgroundColor}
                         textColor={props.botMessage?.textColor}
