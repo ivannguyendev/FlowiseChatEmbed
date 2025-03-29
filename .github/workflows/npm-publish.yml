@@ -15,10 +15,10 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 20
-          registry-url: https://registry.npmjs.org/
+          registry-url: https://npm.pkg.github.com/
           scope: '@ivannguyendev'      
       - run: yarn && yarn build
-      - name: Pushlish to GITHUB
+      - name: Publish to GITHUB
         uses: JS-DevTools/npm-publish@v2
         with:
           token: ${{ secrets.GIT_TOKEN }}
@@ -40,7 +40,7 @@ jobs:
           registry-url: https://registry.npmjs.org/
           scope: '@ivannguyendev'
       - run: yarn && yarn build
-      - name: Pushlish to NPM
+      - name: Publish to NPM
         uses: JS-DevTools/npm-publish@v2
         with:
           token: ${{ secrets.NPM_TOKEN }}
