@@ -36,10 +36,30 @@ export const destroy = () => {
   elementUsed?.remove();
 };
 
+// Function to send a message programmatically
+export const sendMessage = (text: string, files?: File[]) => {
+  // Prefer the element associated with the last init, fallback to querySelector
+  const element = elementUsed ?? document.querySelector('flowise-fullchatbot, flowise-chatbot');
+  if (!element) {
+    console.error('Flowise chatbot element not found. Make sure the chatbot is initialized before sending messages.');
+    return;
+  }
+
+  // Set the property on the custom element.
+  // The component's createEffect will handle this.
+  try {
+    // Use 'any' to bypass strict type checking for the custom element property
+    (element as any).externalCommand = { text, files: files || [], timestamp: Date.now() };
+  } catch (error) {
+    console.error('Failed to set externalCommand property on the chatbot element:', error);
+  }
+};
+
 type Chatbot = {
   initFull: typeof initFull;
   init: typeof init;
   destroy: typeof destroy;
+  sendMessage: typeof sendMessage; // Add the new method type
 };
 
 declare const window:
@@ -48,10 +68,12 @@ declare const window:
     }
   | undefined;
 
-export const parseChatbot = () => ({
+export const parseChatbot = (): Chatbot => ({
+  // Ensure return type matches Chatbot type
   initFull,
   init,
   destroy,
+  sendMessage, // Include the new method
 });
 
 export const injectChatbotInWindow = (bot: Chatbot) => {

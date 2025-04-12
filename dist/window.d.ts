@@ -16,18 +16,14 @@ export declare const initFull: (props: BotProps & {
 }) => void;
 export declare const init: (props: BotProps) => void;
 export declare const destroy: () => void;
+export declare const sendMessage: (text: string, files?: File[]) => void;
 type Chatbot = {
     initFull: typeof initFull;
     init: typeof init;
     destroy: typeof destroy;
+    sendMessage: typeof sendMessage;
 };
-export declare const parseChatbot: () => {
-    initFull: (props: BotProps & {
-        id?: string;
-    }) => void;
-    init: (props: BotProps) => void;
-    destroy: () => void;
-};
+export declare const parseChatbot: () => Chatbot;
 export declare const injectChatbotInWindow: (bot: Chatbot) => void;
 export {};
 //# sourceMappingURL=window.d.ts.map

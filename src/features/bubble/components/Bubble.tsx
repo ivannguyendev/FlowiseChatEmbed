@@ -156,6 +156,7 @@ export const Bubble = (props: BubbleProps) => {
               closeBot={closeBot}
               chatId={props.chatId}
               storageAdapter={props.storageAdapter}
+              externalCommand={props.externalCommand}
             />
           </div>
         </Show>

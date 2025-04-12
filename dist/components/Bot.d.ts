@@ -106,6 +106,11 @@ export type BotProps = {
     closeBot?: () => void;
     chatId?: string;
     storageAdapter?: StorageAdapter;
+    externalCommand?: {
+        text: string;
+        files?: File[];
+        timestamp: number;
+    } | null;
 };
 export type LeadsConfig = {
     status: boolean;

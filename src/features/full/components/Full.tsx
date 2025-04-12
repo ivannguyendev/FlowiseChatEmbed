@@ -92,6 +92,7 @@ export const Full = (props: FullProps, { element }: { element: HTMLElement }) =>
             renderHTML={props.theme?.chatWindow?.renderHTML}
             chatId={props.chatId}
             storageAdapter={props.storageAdapter}
+            externalCommand={props.externalCommand}
           />
         </div>
       </Show>

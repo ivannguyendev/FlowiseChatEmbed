@@ -9,4 +9,6 @@ export const defaultBotProps: BubbleProps = {
   observersConfig: undefined,
   storageAdapter: undefined,
   chatId: undefined,
+  // Add the default value for the external command property
+  externalCommand: null,
 };

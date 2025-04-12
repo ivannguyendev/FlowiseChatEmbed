@@ -22,6 +22,7 @@ declare const chatbot: {
         theme?: import("./features/bubble/types").BubbleTheme | undefined;
     }) => void;
     destroy: () => void;
+    sendMessage: (text: string, files?: File[] | undefined) => void;
 };
 export default chatbot;
 //# sourceMappingURL=web.d.ts.map

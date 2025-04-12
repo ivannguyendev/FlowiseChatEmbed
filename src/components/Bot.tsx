@@ -160,6 +160,8 @@ export type BotProps = {
   closeBot?: () => void;
   chatId?: string;
   storageAdapter?: StorageAdapter;
+  // Add the external command prop
+  externalCommand?: { text: string; files?: File[]; timestamp: number } | null;
 };
 
 export type LeadsConfig = {
@@ -306,15 +308,111 @@ export const Bot = (botProps: BotProps & { class?: string }) => {
   const [isDragActive, setIsDragActive] = createSignal(false);
   const [uploadedFiles, setUploadedFiles] = createSignal<{ file: File; type: string }[]>([]);
 
+  // --- Helper Functions for External Control ---
+
+  const _setExternalUserInput = (text: string) => {
+    setUserInput(text);
+  };
+
+  const readFileAsDataURL = (file: File): Promise<FilePreview> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        if (!evt?.target?.result) {
+          return reject(new Error('Failed to read file'));
+        }
+        const result = evt.target.result;
+        let previewUrl;
+        if (file.type.startsWith('audio/')) {
+          previewUrl = '../assets/wave-sound.jpg'; // Or generate blob URL if needed
+        } else if (file.type.startsWith('image/')) {
+          previewUrl = URL.createObjectURL(file);
+        } else {
+          // For other file types, maybe use a generic icon or the name
+          previewUrl = ''; // Placeholder, adjust as needed
+        }
+        resolve({
+          data: result,
+          preview: previewUrl || URL.createObjectURL(file), // Fallback for non-image/audio
+          type: 'file', // Assuming all external files are 'file' type for preview
+          name: file.name,
+          mime: file.type,
+        });
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const _setExternalFiles = async (files: File[]) => {
+    if (!files || files.length === 0) {
+      setPreviews([]);
+      setUploadedFiles([]); // Clear associated uploaded files as well
+      return;
+    }
+
+    const newPreviews: FilePreview[] = [];
+    const newUploadedFiles: { file: File; type: string }[] = [];
+
+    for (const file of files) {
+      if (isFileAllowedForUpload(file) === false) {
+        console.warn(`File ${file.name} is not allowed for upload.`);
+        continue; // Skip this file
+      }
+      try {
+        const previewData = await readFileAsDataURL(file);
+        newPreviews.push(previewData);
+
+        // Determine upload type (similar logic to handleFileChange/handleDrop)
+        if (
+          !file.type ||
+          !uploadsConfig()
+            ?.imgUploadSizeAndTypes.map((allowed) => allowed.fileTypes)
+            .join(',')
+            .includes(file.type)
+        ) {
+          newUploadedFiles.push({ file, type: fullFileUpload() ? 'file:full' : 'file:rag' });
+        }
+      } catch (error) {
+        console.error(`Error processing file ${file.name}:`, error);
+        // Optionally handle the error, e.g., show a message to the user
+      }
+    }
+    setPreviews(newPreviews);
+    setUploadedFiles(newUploadedFiles);
+  };
+
+  const _triggerSubmit = () => {
+    // Call the original handleSubmit, it will use the state set by _setExternalUserInput and _setExternalFiles
+    handleSubmit(''); // Pass empty string as value is read from userInput signal
+  };
+
+  // --- End Helper Functions ---
+
   createMemo(() => {
     const customerId = (props.chatflowConfig?.vars as any)?.customerId;
     const generatedChatId = customerId ? `${customerId.toString()}+${uuidv4()}` : uuidv4();
     setChatId(props.chatId ?? generatedChatId);
   });
 
+  // Effect to handle external commands via prop
+  createEffect(async () => {
+    const command = props.externalCommand;
+    if (command) {
+      console.log('Received external command:', command);
+      _setExternalUserInput(command.text);
+      await _setExternalFiles(command.files || []);
+      _triggerSubmit();
+      // Optional: Clear the command prop after processing if needed,
+      // though the timestamp should allow re-triggering.
+      // Consider how the parent component manages this prop.
+    }
+  });
+
   onMount(() => {
-    if (botProps?.observersConfig) {
-      const { observeUserInput, observeLoading, observeMessages } = botProps.observersConfig;
+    if (props?.observersConfig) {
+      // Use props instead of botProps here
+      const { observeUserInput, observeLoading, observeMessages } = props.observersConfig;
       typeof observeUserInput === 'function' &&
         // eslint-disable-next-line solid/reactivity
         createMemo(() => {
