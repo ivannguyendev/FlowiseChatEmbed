@@ -728,9 +728,9 @@ export const Bot = (botProps: BotProps & { class?: string }) => {
             break;
           case 'end':
             if (props.storageAdapter) {
-              await props.storageAdapter.saveMessages(props.chatflowid, { chatId: chatId() });
+              await props.storageAdapter.saveMessages(props.chatflowid, { chatId });
             } else {
-              setLocalStorageChatflow(props.chatflowid, chatId());
+              setLocalStorageChatflow(props.chatflowid, chatId);
             }
             closeResponse();
             break;
